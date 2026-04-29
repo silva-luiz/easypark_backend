@@ -1,5 +1,6 @@
 package com.example.easypark.service;
 
+import com.example.easypark.dto.ExitResponseDTO;
 import com.example.easypark.entity.Entry;
 import com.example.easypark.entity.EntryStatus;
 import com.example.easypark.entity.Exit;
@@ -26,7 +27,7 @@ public class ExitService {
         this.exitRepository = exitRepository;
     }
 
-    public Exit registerExit(String plate) {
+    public ExitResponseDTO registerExit(String plate) {
 
         Entry entry = entryRepository
                 .findByVehiclePlateAndStatus(plate, EntryStatus.OPEN)
@@ -37,13 +38,21 @@ public class ExitService {
         Exit exit = new Exit();
         exit.setEntry(entry);
         exit.setExitTime(LocalDateTime.now());
-        exit.setTotalAmount(amount);
         exit.setPaid(true);
+        exit.setTotalAmount(amount);
 
         entry.setStatus(EntryStatus.CLOSED);
         entryRepository.save(entry);
 
-        return exitRepository.save(exit);
+        Exit saved = exitRepository.save(exit);
+
+        return new ExitResponseDTO(
+                saved.getId(),
+                saved.getEntry().getVehicle().getPlate(),
+                saved.getExitTime(),
+                saved.getTotalAmount(),
+                saved.isPaid()
+        );
     }
 
     private BigDecimal calculateAmount(Entry entry) {

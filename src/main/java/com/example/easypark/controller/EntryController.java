@@ -1,6 +1,7 @@
 package com.example.easypark.controller;
 
 import com.example.easypark.dto.EntryRequestDTO;
+import com.example.easypark.dto.EntryResponseDTO;
 import com.example.easypark.entity.Entry;
 import com.example.easypark.service.EntryService;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,7 @@ public class EntryController {
     }
 
     @PostMapping
-    public Entry create(@RequestBody EntryRequestDTO request) {
+    public EntryResponseDTO create(@RequestBody EntryRequestDTO request) {
         return entryService.createEntry(request);
     }
 }

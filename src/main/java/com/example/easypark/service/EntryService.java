@@ -1,11 +1,14 @@
 package com.example.easypark.service;
 
 import com.example.easypark.dto.EntryRequestDTO;
+import com.example.easypark.dto.EntryResponseDTO;
 import com.example.easypark.entity.Entry;
+import com.example.easypark.entity.Parking;
 import com.example.easypark.entity.Vehicle;
 import com.example.easypark.entity.EntryStatus;
 import com.example.easypark.exception.BusinessException;
 import com.example.easypark.repository.EntryRepository;
+import com.example.easypark.repository.ParkingRepository;
 import com.example.easypark.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +19,17 @@ public class EntryService {
 
     private final VehicleRepository vehicleRepository;
     private final EntryRepository entryRepository;
+    private final ParkingRepository parkingRepository;
 
-    public EntryService(VehicleRepository vehicleRepository, EntryRepository entryRepository) {
+    public EntryService(VehicleRepository vehicleRepository, EntryRepository entryRepository, ParkingRepository parkingRepository) {
         this.vehicleRepository = vehicleRepository;
         this.entryRepository = entryRepository;
+        this.parkingRepository = parkingRepository;
     }
 
-    public Entry createEntry(EntryRequestDTO request) {
+    public EntryResponseDTO createEntry(EntryRequestDTO request) {
 
-        // 1. Verificar se já existe entrada aberta
+        // 1. Check if there is already an open entry
         entryRepository.findByVehiclePlateAndStatus(
                 request.getPlate(),
                 EntryStatus.OPEN
@@ -32,22 +37,34 @@ public class EntryService {
             throw new BusinessException("Vehicle already inside the parking lot");
         });
 
-        // 2. Buscar ou criar veículo
+        // 2. Find parking lot
+        Parking parking = parkingRepository.findById(request.getParkingId())
+                .orElseThrow(() -> new BusinessException("Parking not found"));
+
+        // 3. Find or create vehicle
         Vehicle vehicle = vehicleRepository
                 .findByPlate(request.getPlate())
                 .orElseGet(() -> {
-                    Vehicle newVehicle = new Vehicle();
-                    newVehicle.setPlate(request.getPlate());
-                    return vehicleRepository.save(newVehicle);
+                    Vehicle v = new Vehicle();
+                    v.setPlate(request.getPlate());
+                    return vehicleRepository.save(v);
                 });
 
-        // 3. Criar entry
+        // 4. Create entry
         Entry entry = new Entry();
         entry.setVehicle(vehicle);
+        entry.setParking(parking);
         entry.setEntryTime(LocalDateTime.now());
         entry.setCustomerType(request.getCustomerType());
         entry.setStatus(EntryStatus.OPEN);
 
-        return entryRepository.save(entry);
+        Entry saved = entryRepository.save(entry);
+
+        return new EntryResponseDTO(
+                saved.getId(),
+                saved.getVehicle().getPlate(),
+                saved.getStatus().toString(),
+                saved.getEntryTime()
+        );
     }
 }

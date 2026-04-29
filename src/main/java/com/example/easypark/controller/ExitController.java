@@ -1,6 +1,7 @@
 package com.example.easypark.controller;
 
 import com.example.easypark.dto.ExitRequestDTO;
+import com.example.easypark.dto.ExitResponseDTO;
 import com.example.easypark.entity.Exit;
 import com.example.easypark.service.ExitService;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,7 @@ public class ExitController {
     }
 
     @PostMapping
-    public Exit registerExit(@RequestBody ExitRequestDTO request) {
+    public ExitResponseDTO registerExit(@RequestBody ExitRequestDTO request) {
         return exitService.registerExit(request.getPlate());
     }
 }

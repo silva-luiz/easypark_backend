@@ -16,29 +16,34 @@ public class Entry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // RELACIONAMENTO COM VEHICLE
+    // Association with Vehicle
     @ManyToOne(optional = false)
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    // DATA DE ENTRADA
+    // Entry date
     @Column(nullable = false, updatable = false)
     private LocalDateTime entryTime;
 
-    // TIPO DE CLIENTE
+    // Customer Type
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_type", nullable = false)
     private CustomerType customerType;
 
-    // STATUS DA ENTRADA
+    // Entry Status
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EntryStatus status;
 
-    // AUTOMATIZAÇÃO AO SALVAR
+    // Update on save
     @PrePersist
     public void prePersist() {
         this.entryTime = LocalDateTime.now();
         this.status = EntryStatus.OPEN;
     }
+
+    // Entry -> Parking
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "parking_id", nullable = false)
+    private Parking parking;
 }
