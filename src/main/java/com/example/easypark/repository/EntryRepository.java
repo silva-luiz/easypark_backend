@@ -12,4 +12,6 @@ public interface EntryRepository extends JpaRepository<Entry, Long> {
     List<Entry> findByStatus(EntryStatus status);
 
     Optional<Entry> findByVehiclePlateAndStatus(String plate, EntryStatus status);
+
+    long countByParkingIdAndStatus(Long parkingId, EntryStatus status);
 }

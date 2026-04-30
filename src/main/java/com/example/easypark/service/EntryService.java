@@ -41,7 +41,18 @@ public class EntryService {
         Parking parking = parkingRepository.findById(request.getParkingId())
                 .orElseThrow(() -> new BusinessException("Parking not found"));
 
-        // 3. Find or create vehicle
+        // 3. Spots Control
+        long occupiedSpots = entryRepository.countByParkingIdAndStatus(
+                parking.getId(),
+                EntryStatus.OPEN
+        );
+
+        if (occupiedSpots >= parking.getCapacity()) {
+            throw new BusinessException("Parking is full");
+        }
+
+
+        // 4. Find or create vehicle
         Vehicle vehicle = vehicleRepository
                 .findByPlate(request.getPlate())
                 .orElseGet(() -> {
@@ -50,7 +61,7 @@ public class EntryService {
                     return vehicleRepository.save(v);
                 });
 
-        // 4. Create entry
+        // 5. Create entry
         Entry entry = new Entry();
         entry.setVehicle(vehicle);
         entry.setParking(parking);
