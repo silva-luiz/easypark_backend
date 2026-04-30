@@ -2,6 +2,7 @@ package com.example.easypark.service;
 
 import com.example.easypark.dto.EntryRequestDTO;
 import com.example.easypark.dto.EntryResponseDTO;
+import com.example.easypark.dto.EntrySummaryResponseDTO;
 import com.example.easypark.entity.Entry;
 import com.example.easypark.entity.Parking;
 import com.example.easypark.entity.Vehicle;
@@ -12,7 +13,10 @@ import com.example.easypark.repository.ParkingRepository;
 import com.example.easypark.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
+
 
 @Service
 public class EntryService {
@@ -42,7 +46,7 @@ public class EntryService {
                 .orElseThrow(() -> new BusinessException("Parking not found"));
 
         // 3. Spots Control
-        long occupiedSpots = entryRepository.countByParkingIdAndStatus(
+        long occupiedSpots = entryRepository.countByParking_IdAndStatus(
                 parking.getId(),
                 EntryStatus.OPEN
         );
@@ -77,5 +81,37 @@ public class EntryService {
                 saved.getStatus().toString(),
                 saved.getEntryTime()
         );
+    }
+
+    public List<EntrySummaryResponseDTO> listActiveEntries(Long parkingId) {
+
+        List<Entry> entries = entryRepository
+                .findByParking_IdAndStatus(parkingId, EntryStatus.OPEN);
+
+        return entries.stream()
+                .map(e -> {
+
+                    Duration duration = Duration.between(
+                            e.getEntryTime(),
+                            LocalDateTime.now()
+                    );
+
+                    String formattedDuration = formatDuration(duration);
+
+                    return new EntrySummaryResponseDTO(
+                            e.getVehicle().getPlate(),
+                            e.getEntryTime(),
+                            formattedDuration
+                    );
+                })
+                .toList();
+    }
+
+    private String formatDuration(Duration duration) {
+
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+
+        return hours + "h " + minutes + "min";
     }
 }
