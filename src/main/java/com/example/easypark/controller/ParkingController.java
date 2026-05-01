@@ -20,15 +20,13 @@ public class ParkingController {
         this.parkingService = parkingService;
     }
 
-
-
-    @GetMapping("/{parkingId}/entries")
-    public List<EntrySummaryResponseDTO> listEntries(@PathVariable Long parkingId) {
-        return entryService.listActiveEntries(parkingId);
+    @GetMapping("/entries")
+    public List<EntrySummaryResponseDTO> listEntries() {
+        return entryService.listActiveEntries();
     }
 
-    @GetMapping("/{parkingId}/dashboard")
-    public ParkingDashboardResponseDTO getDashboard(@PathVariable Long parkingId) {
-        return parkingService.getDashboard(parkingId);
+    @GetMapping("/dashboard")
+    public ParkingDashboardResponseDTO get() {
+        return parkingService.getDashboard();
     }
 }

@@ -1,13 +1,11 @@
 package com.example.easypark.service;
 
 import com.example.easypark.dto.ExitResponseDTO;
-import com.example.easypark.entity.Entry;
-import com.example.easypark.entity.EntryStatus;
-import com.example.easypark.entity.Exit;
-import com.example.easypark.entity.CustomerType;
+import com.example.easypark.entity.*;
 import com.example.easypark.exception.BusinessException;
 import com.example.easypark.repository.EntryRepository;
 import com.example.easypark.repository.ExitRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,32 +25,41 @@ public class ExitService {
         this.exitRepository = exitRepository;
     }
 
-    public ExitResponseDTO registerExit(String plate) {
+    public Exit registerExit(String plate) {
 
+        // 🔐 1. GET LOGGED USER
+        User user = (User) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        Long parkingId = user.getParking().getId();
+
+        // 2. FIND OPEN ENTRY FOR THIS VEHICLE + PARKING
         Entry entry = entryRepository
                 .findByVehiclePlateAndStatus(plate, EntryStatus.OPEN)
                 .orElseThrow(() -> new BusinessException("Vehicle not found or already exited"));
 
+        // 🔥 VALIDAÇÃO CRÍTICA
+        if (!entry.getParking().getId().equals(parkingId)) {
+            throw new BusinessException("This vehicle does not belong to your parking");
+        }
+
+        // 3. CALCULATE AMOUNT
         BigDecimal amount = calculateAmount(entry);
 
+        // 4. CREATE EXIT
         Exit exit = new Exit();
         exit.setEntry(entry);
         exit.setExitTime(LocalDateTime.now());
-        exit.setPaid(true);
         exit.setTotalAmount(amount);
+        exit.setPaid(true);
 
+        // 5. CLOSE ENTRY
         entry.setStatus(EntryStatus.CLOSED);
         entryRepository.save(entry);
 
-        Exit saved = exitRepository.save(exit);
-
-        return new ExitResponseDTO(
-                saved.getId(),
-                saved.getEntry().getVehicle().getPlate(),
-                saved.getExitTime(),
-                saved.getTotalAmount(),
-                saved.isPaid()
-        );
+        return exitRepository.save(exit);
     }
 
     private BigDecimal calculateAmount(Entry entry) {

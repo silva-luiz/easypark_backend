@@ -9,5 +9,4 @@ import lombok.Setter;
 public class EntryRequestDTO {
     private String plate;
     private CustomerType customerType;
-    private Long parkingId;
 }

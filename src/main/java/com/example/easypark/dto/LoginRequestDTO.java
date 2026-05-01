@@ -5,6 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ExitRequestDTO {
-    private String plate;
+public class LoginRequestDTO {
+    private String email;
+    private String password;
 }

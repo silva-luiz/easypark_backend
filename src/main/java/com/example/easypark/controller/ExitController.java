@@ -17,7 +17,7 @@ public class ExitController {
     }
 
     @PostMapping
-    public ExitResponseDTO registerExit(@RequestBody ExitRequestDTO request) {
+    public Exit registerExit(@RequestBody ExitRequestDTO request) {
         return exitService.registerExit(request.getPlate());
     }
 }

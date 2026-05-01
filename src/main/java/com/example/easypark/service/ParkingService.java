@@ -3,9 +3,11 @@ package com.example.easypark.service;
 import com.example.easypark.dto.ParkingDashboardResponseDTO;
 import com.example.easypark.entity.EntryStatus;
 import com.example.easypark.entity.Parking;
+import com.example.easypark.entity.User;
 import com.example.easypark.exception.BusinessException;
 import com.example.easypark.repository.EntryRepository;
 import com.example.easypark.repository.ParkingRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,28 +21,31 @@ public class ParkingService {
         this.entryRepository = entryRepository;
     }
 
-    public ParkingDashboardResponseDTO getDashboard(Long parkingId) {
+    public ParkingDashboardResponseDTO getDashboard() {
 
-        // 1. Find parking by ID
-        Parking parking = parkingRepository.findById(parkingId)
-                .orElseThrow(() -> new BusinessException("Parking not found"));
+        // 🔐 1. GET LOGGED USER
+        User user = (User) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-        // 2. Count occupied spots (vehicles with OPEN status)
+        Parking parking = user.getParking();
+
+        // 2. COUNT OCCUPIED SPOTS
         long occupied = entryRepository.countByParking_IdAndStatus(
-                parkingId,
+                parking.getId(),
                 EntryStatus.OPEN
         );
 
-        // 3. Calculate available spots
+        // 3. CALCULATE AVAILABLE SPOTS
         long available = parking.getCapacity() - occupied;
 
-        // 4. Calculate occupancy rate (%)
+        // 4. CALCULATE OCCUPANCY RATE (%)
         double occupancyRate = (parking.getCapacity() == 0)
                 ? 0
                 : (occupied * 100.0) / parking.getCapacity();
 
-        // 5. Round occupancy rate
-        occupancyRate = Math.round(occupancyRate * 100.0) / 100.0;
+        occupancyRate = Math.round(occupancyRate);
 
         return new ParkingDashboardResponseDTO(
                 parking.getName(),

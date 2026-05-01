@@ -3,14 +3,12 @@ package com.example.easypark.service;
 import com.example.easypark.dto.EntryRequestDTO;
 import com.example.easypark.dto.EntryResponseDTO;
 import com.example.easypark.dto.EntrySummaryResponseDTO;
-import com.example.easypark.entity.Entry;
-import com.example.easypark.entity.Parking;
-import com.example.easypark.entity.Vehicle;
-import com.example.easypark.entity.EntryStatus;
+import com.example.easypark.entity.*;
 import com.example.easypark.exception.BusinessException;
 import com.example.easypark.repository.EntryRepository;
 import com.example.easypark.repository.ParkingRepository;
 import com.example.easypark.repository.VehicleRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -33,7 +31,15 @@ public class EntryService {
 
     public EntryResponseDTO createEntry(EntryRequestDTO request) {
 
-        // 1. Check if there is already an open entry
+        // 🔐 1. GET LOGGED USER
+        User user = (User) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        Parking parking = user.getParking();
+
+        // 2. CHECK IF VEHICLE ALREADY INSIDE
         entryRepository.findByVehiclePlateAndStatus(
                 request.getPlate(),
                 EntryStatus.OPEN
@@ -41,11 +47,7 @@ public class EntryService {
             throw new BusinessException("Vehicle already inside the parking lot");
         });
 
-        // 2. Find parking lot
-        Parking parking = parkingRepository.findById(request.getParkingId())
-                .orElseThrow(() -> new BusinessException("Parking not found"));
-
-        // 3. Spots Control
+        // 3. SPOTS CONTROL
         long occupiedSpots = entryRepository.countByParking_IdAndStatus(
                 parking.getId(),
                 EntryStatus.OPEN
@@ -55,8 +57,7 @@ public class EntryService {
             throw new BusinessException("Parking is full");
         }
 
-
-        // 4. Find or create vehicle
+        // 4. FIND OR CREATE VEHICLE
         Vehicle vehicle = vehicleRepository
                 .findByPlate(request.getPlate())
                 .orElseGet(() -> {
@@ -65,7 +66,7 @@ public class EntryService {
                     return vehicleRepository.save(v);
                 });
 
-        // 5. Create entry
+        // 5. CREATE ENTRY
         Entry entry = new Entry();
         entry.setVehicle(vehicle);
         entry.setParking(parking);
@@ -83,14 +84,20 @@ public class EntryService {
         );
     }
 
-    public List<EntrySummaryResponseDTO> listActiveEntries(Long parkingId) {
+    public List<EntrySummaryResponseDTO> listActiveEntries() {
+
+        User user = (User) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        Long parkingId = user.getParking().getId();
 
         List<Entry> entries = entryRepository
                 .findByParking_IdAndStatus(parkingId, EntryStatus.OPEN);
 
         return entries.stream()
                 .map(e -> {
-
                     Duration duration = Duration.between(
                             e.getEntryTime(),
                             LocalDateTime.now()
