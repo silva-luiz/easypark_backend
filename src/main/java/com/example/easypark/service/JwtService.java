@@ -21,13 +21,18 @@ public class JwtService {
 
     public String generateToken(User user) {
 
-        return Jwts.builder()
-                .setSubject(user.getEmail())
-                .claim("parkingId", user.getParking().getId())
+        var builder = Jwts.builder()
+                .setSubject(user.getId().toString())
+                .claim("email", user.getEmail())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
-                .signWith(getKey())
-                .compact();
+                .signWith(getKey());
+
+        if (user.getParking() != null) {
+            builder.claim("parkingId", user.getParking().getId());
+        }
+
+        return builder.compact();
     }
 
     public String extractEmail(String token) {

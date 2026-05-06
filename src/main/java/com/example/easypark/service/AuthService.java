@@ -1,10 +1,11 @@
 package com.example.easypark.service;
 
+import com.example.easypark.dto.AuthResponseDTO;
 import com.example.easypark.dto.LoginRequestDTO;
+import com.example.easypark.dto.RegisterRequestDTO;
 import com.example.easypark.entity.User;
 import com.example.easypark.exception.BusinessException;
 import com.example.easypark.repository.UserRepository;
-import org.springframework.security.core.parameters.P;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,24 +13,35 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, JwtService jwtService,  PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
-        this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public String login(LoginRequestDTO request) {
+        return "token";
+    }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BusinessException("Invalid email or password"));
+    public AuthResponseDTO register(RegisterRequestDTO request) {
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("Invalid email or password");
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("Email já cadastrado");
         }
 
-        return jwtService.generateToken(user);
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setParking(null);
+
+        userRepository.save(user);
+
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponseDTO(token, false);
     }
 }

@@ -23,7 +23,7 @@ public class User {
     private String password;
 
     // RELATION WITH PARKING
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "parking_id", nullable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "parking_id", nullable = true)
     private Parking parking;
 }
